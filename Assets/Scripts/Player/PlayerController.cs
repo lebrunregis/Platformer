@@ -5,14 +5,26 @@ using UnityEngine.InputSystem;
 
 namespace Player
 {
+    [RequireComponent(typeof(PlayerInput))]
+    [RequireComponent(typeof(Rigidbody2D))]
     public class PlayerController : MonoBehaviour
     {
-        private Vector2 _gravity = new Vector2(0f, 9.81f);
+
         private Vector2 _move;
         private Vector2 _look;
         private bool _jump;
         private bool _crouch;
-        private float _moveSpeed = 2f;
+
+        private float _runSpeed = 2f;
+
+        public float maxFallSpeed;
+        private Vector2 _gravity = new Vector2(0f, -2f);
+
+        public float jumpUpwardVelocity;
+        public float maxJumpHeight;
+        private float _currentJumpHeight;
+
+        Rigidbody2D rb;
 
         [Flags]
         public enum InputFilter
@@ -66,15 +78,17 @@ namespace Player
         public bool GetPlayerState(PlayerStateEnums.PlayerState state)
         {
             PlayerStateEnums.PlayerState mask = playerState & state;
-            return mask == state ;
+            return mask == state;
         }
 
         public void SetPlayerState(PlayerStateEnums.PlayerState state, bool enabled)
         {
-            if (enabled) { 
+            if (enabled)
+            {
                 playerState ^= state;
             }
-            else {
+            else
+            {
                 playerState |= state;
             }
         }
@@ -96,20 +110,66 @@ namespace Player
         // Start is called once before the first execution of Update after the MonoBehaviour is created
         void Start()
         {
-
+            rb = GetComponent<Rigidbody2D>();
+            rb.linearVelocity = new Vector3();
         }
 
         // Update is called once per frame
         void Update()
         {
-            Move();
+            ProcessAirState();
+            ProcessGroundState();
+            ProcessWaterState();
+        }
+
+        private void ProcessWaterState()
+        {
+            switch (playerWaterState)
+            {
+                default:
+                    break;
+            }
+        }
+
+        private void ProcessGroundState()
+        {
+            switch (playerGroundState)
+            {
+                case PlayerStateEnums.PlayerGroundState.Idle:
+                    Move();
+                    break;
+                case PlayerStateEnums.PlayerGroundState.Walking:
+                    Move();
+                    break;
+                case PlayerStateEnums.PlayerGroundState.Running:
+                    Move();
+                    break;
+                case PlayerStateEnums.PlayerGroundState.Crouch:
+                    break;
+            }
+        }
+
+        private void ProcessAirState()
+        {
+            switch (playerAirState)
+            {
+                default:
+                    ApplyGravity();
+                    break;
+            }
+        }
+
+        private void ApplyGravity()
+        {
+            rb.linearVelocity = new Vector2(rb.linearVelocityX, rb.linearVelocityY ) + _gravity * Time.deltaTime;
         }
 
         private void Move()
         {
             if (_move.x != 0)
             {
-                transform.Translate(_move.x * _moveSpeed * Time.deltaTime, 0, 0);
+                Debug.Log("Updating move speed");
+                rb.linearVelocity = new Vector2(_move.x * _runSpeed, rb.linearVelocityY);
             }
         }
 
@@ -120,11 +180,28 @@ namespace Player
 
         public void OnJump(InputAction.CallbackContext context)
         {
-            if (context.performed && InputFilter.Jump != (inputFilter & InputFilter.Jump) && GetPlayerState(PlayerStateEnums.PlayerState.Grounded))
+            if (GetPlayerState(PlayerStateEnums.PlayerState.Grounded) && context.performed)
             {
                 StartJump();
-
             }
+            else if (PlayerAirState == PlayerStateEnums.PlayerAirState.Falling && context.performed)
+            {
+                DoubleJump(context.performed);
+            }
+            else if (context.canceled)
+            {
+                EndJump();
+            }
+        }
+
+        private void EndJump()
+        {
+            SetPlayerAirState(PlayerStateEnums.PlayerAirState.Falling);
+        }
+
+        private void DoubleJump(bool performed)
+        {
+            SetPlayerAirState(PlayerStateEnums.PlayerAirState.DoubleJumping);
         }
 
         private void StartJump()
@@ -164,7 +241,8 @@ namespace Player
 
         public void OnCollisionEnter(Collision other)
         {
-
+            SetPlayerAirState(PlayerStateEnums.PlayerAirState.None);
+            SetPlayerGroundState(PlayerStateEnums.PlayerGroundState.Idle);
         }
     }
 }

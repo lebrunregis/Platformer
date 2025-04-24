@@ -435,7 +435,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9c8fa205ff8fdb43bee410a581ef37c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  inputFilter: 0
+  maxFallSpeed: 0
+  jumpUpwardVelocity: 0
+  maxJumpHeight: 0
   playerState: 0
   playerAirState: 0
   playerGroundState: 0
@@ -540,13 +542,21 @@ PrefabInstance:
       propertyPath: m_LocalPosition.y
       value: 0.38
       objectReference: {fileID: 0}
+    - target: {fileID: 3661419446564758415, guid: 93bb20e8108a0fe49a836fce206fb092, type: 3}
+      propertyPath: playerState
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3661419446564758415, guid: 93bb20e8108a0fe49a836fce206fb092, type: 3}
+      propertyPath: playerGroundState
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3967809189513116895, guid: 93bb20e8108a0fe49a836fce206fb092, type: 3}
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 8571134969346108078, guid: 93bb20e8108a0fe49a836fce206fb092, type: 3}
       propertyPath: m_BodyType
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8731422637166884162, guid: 93bb20e8108a0fe49a836fce206fb092, type: 3}
       propertyPath: m_ActionEvents.Array.data[0].m_PersistentCalls.m_Calls.Array.size

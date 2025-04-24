@@ -5,7 +5,7 @@ namespace Player
     public class PlayerStateEnums
     {
         [Flags]
-        public enum PlayerState: byte
+        public enum PlayerState : byte
         {
             None = 0,
             Grounded = 1 << 0,
