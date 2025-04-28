@@ -1,7 +1,9 @@
 using System;
+using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEngine.InputSystem.PlayerInput;
 
 namespace Player
 {
@@ -21,7 +23,7 @@ namespace Player
         private float _crouchSpeed = 0.5f;
 
         public float maxFallSpeed = 5f;
-        private Vector2 _gravity = new(0f, -9.81f);
+        private Vector2 _gravity;
 
         public float jumpUpwardVelocity = 10f;
         public float maxJumpHeight = 2f;
@@ -32,11 +34,6 @@ namespace Player
         public LayerMask walkableLayers;
 
         Rigidbody2D rb2D;
-        public GameObject GroundedRaycastPoint;
-        public GameObject rightColliderArea;
-        public GameObject leftColliderArea;
-        public GameObject upColliderArea;
-        public GameObject downColliderArea;
 
         [Flags]
         public enum InputFilter
@@ -52,8 +49,11 @@ namespace Player
         public PlayerStateEnums.PlayerAirState playerAirState = PlayerStateEnums.PlayerAirState.None;
         public PlayerStateEnums.PlayerGroundState playerGroundState = PlayerStateEnums.PlayerGroundState.Idle;
         public PlayerStateEnums.PlayerWaterState playerWaterState = PlayerStateEnums.PlayerWaterState.None;
-
-        public PlayerStateEnums.PlayerAirState PlayerAirState { get => playerAirState; set => SetPlayerAirState(value); }
+        public PlayerStateEnums.PlayerAirState PlayerAirState
+        {
+            get => playerAirState; set => SetPlayerAirState(value);
+        }
+     
 
         private void SetPlayerAirState(PlayerStateEnums.PlayerAirState value)
         {
@@ -61,6 +61,7 @@ namespace Player
             {
                 case PlayerStateEnums.PlayerAirState.None:
                     SetPlayerState(PlayerStateEnums.PlayerState.Airborne, false);
+                    m_velocity.y = 0f;
                     break;
                 default:
                     SetPlayerState(PlayerStateEnums.PlayerState.Airborne, true);
@@ -97,12 +98,10 @@ namespace Player
         {
             if (enabled)
             {
-                Debug.Log("State enabled");
                 playerState |= state;
             }
             else
             {
-                Debug.Log("State disabled");
                 playerState &= ~state;
             }
         }
@@ -126,6 +125,7 @@ namespace Player
         {
             rb2D = GetComponent<Rigidbody2D>();
             m_velocity = new Vector3();
+            _gravity = new Vector2(0f,-rb2D.gravityScale);
         }
 
         // Update is called once per frame
@@ -163,8 +163,13 @@ namespace Player
         {
             switch (playerGroundState)
             {
+                case PlayerStateEnums.PlayerGroundState.None:
+                    rb2D.bodyType = RigidbodyType2D.Dynamic;
+                    break;
                 case PlayerStateEnums.PlayerGroundState.Idle:
-                    Move(_walkSpeed);
+                    Move(_runSpeed);
+                    rb2D.bodyType = RigidbodyType2D.Kinematic;
+                    m_velocity = new Vector2();
                     break;
                 case PlayerStateEnums.PlayerGroundState.Walking:
                     Move(_walkSpeed);
@@ -203,20 +208,8 @@ namespace Player
 
         private void ProcessFall()
         {
-            // RaycastHit2D hit = Physics2D.Raycast(GroundedRaycastPoint.transform.position, _gravity, 0.11f,walkableLayers);
-            // if (hit.collider != null)
-            // {
-            // Debug.Log(hit.collider.gameObject.name);
-            // transform.position = hit.point;
-            // m_velocity.y = 0;
-            // SetPlayerAirState(PlayerStateEnums.PlayerAirState.None);
-            // SetPlayerGroundState(PlayerStateEnums.PlayerGroundState.Idle);
-            // }
-            // else
-            // {
             ApplyGravity();
             Move(_jumpSpeed);
-            // }
         }
 
         private void ProcessJump()
@@ -317,10 +310,69 @@ namespace Player
 
         public void OnCollisionEnter2D(Collision2D other)
         {
-            Debug.Log("Collision detected!");
-            SetPlayerAirState(PlayerStateEnums.PlayerAirState.None);
-            SetPlayerGroundState(PlayerStateEnums.PlayerGroundState.Idle);
-            m_velocity.y = 0f;
+            //Debug.Log("Collision detected!");
+            //SetPlayerAirState(PlayerStateEnums.PlayerAirState.None);
+            //SetPlayerGroundState(PlayerStateEnums.PlayerGroundState.Idle);
+            //m_velocity.y = 0f;
+        }
+
+        public void OnHeadCollide(Collider2D other)
+        {
+            Debug.Log("Head collided");
+            switch (PlayerAirState)
+            {
+                case PlayerStateEnums.PlayerAirState.None:
+                    break;
+                case PlayerStateEnums.PlayerAirState.Jumping:
+                    SetPlayerAirState(PlayerStateEnums.PlayerAirState.Falling);
+                    break;
+                case PlayerStateEnums.PlayerAirState.Hop:
+                    SetPlayerAirState(PlayerStateEnums.PlayerAirState.Falling);
+                    break;
+                case PlayerStateEnums.PlayerAirState.DoubleJumping:
+                    SetPlayerAirState(PlayerStateEnums.PlayerAirState.Falling);
+                    break;
+                    default:
+                    break;
+            }
+        }
+
+        public void OnFeetCollide(Collider2D other)
+        {
+            Debug.Log("Feet collided");
+            switch (PlayerGroundState)
+            {
+                case PlayerStateEnums.PlayerGroundState.None:
+                    SetPlayerGroundState(PlayerStateEnums.PlayerGroundState.Idle);
+                    SetPlayerAirState(PlayerStateEnums.PlayerAirState.None);
+                    break;
+                case PlayerStateEnums.PlayerGroundState.Idle:
+                    break;
+                case PlayerStateEnums.PlayerGroundState.Walking:
+                    break;
+                case PlayerStateEnums.PlayerGroundState.Running:
+                    break;
+                case PlayerStateEnums.PlayerGroundState.Dashing:
+                    break;
+                case PlayerStateEnums.PlayerGroundState.LookingUp:
+                    break;
+                case PlayerStateEnums.PlayerGroundState.Crouch:
+                    break;
+                case PlayerStateEnums.PlayerGroundState.CrouchWalking:
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        public void OnCollideLeft(Collider2D other)
+        {
+
+        }
+
+        public void OnCollideRight(Collider2D other)
+        {
+
         }
     }
 }
